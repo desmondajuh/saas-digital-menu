@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createEstablishment } from '@/app/actions/establishments'
-import { Button } from '@/components/ui/button'
 
 interface CreateEstablishmentModalProps {
   onClose: () => void
@@ -13,45 +12,38 @@ export default function CreateEstablishmentModal({
   onClose,
   onSuccess,
 }: CreateEstablishmentModalProps) {
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    description: '',
-  })
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-
+  async function handleSubmit(formData: FormData) {
     try {
-      if (!formData.name || !formData.slug) {
-        throw new Error('Name and slug are required')
+      setError('')
+      setLoading(true)
+      
+      const name = formData.get('name') as string
+      const slug = formData.get('slug') as string
+      const description = formData.get('description') as string
+
+      if (!name || !slug) {
+        setError('Name and slug are required')
+        return
       }
 
-      // Validate slug format
-      if (!/^[a-z0-9-]+$/.test(formData.slug)) {
-        throw new Error('Slug can only contain lowercase letters, numbers, and hyphens')
+      if (!/^[a-z0-9-]+$/.test(slug)) {
+        setError('Slug can only contain lowercase letters, numbers, and hyphens')
+        return
       }
 
       await createEstablishment({
-        name: formData.name,
-        slug: formData.slug,
-        description: formData.description,
+        name,
+        slug,
+        description,
       })
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create establishment')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create establishment'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -62,7 +54,7 @@ export default function CreateEstablishmentModal({
       <div className="bg-background rounded-lg shadow-lg max-w-md w-full p-6">
         <h2 className="text-2xl font-bold text-foreground mb-4">Create Establishment</h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form action={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
               Business Name *
@@ -70,9 +62,8 @@ export default function CreateEstablishmentModal({
             <input
               type="text"
               name="name"
-              value={formData.name}
-              onChange={handleChange}
               placeholder="My Restaurant"
+              required
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -84,13 +75,12 @@ export default function CreateEstablishmentModal({
             <input
               type="text"
               name="slug"
-              value={formData.slug}
-              onChange={handleChange}
               placeholder="my-restaurant"
+              required
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Used for your menu URL: /{formData.slug}/menu
+              Used for your menu URL: /slug/menu
             </p>
           </div>
 
@@ -100,8 +90,6 @@ export default function CreateEstablishmentModal({
             </label>
             <textarea
               name="description"
-              value={formData.description}
-              onChange={handleChange}
               placeholder="Describe your business..."
               rows={3}
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -111,12 +99,21 @@ export default function CreateEstablishmentModal({
           {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded">{error}</div>}
 
           <div className="flex gap-3 pt-4">
-            <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 px-4 py-2 border border-input rounded-md bg-background text-foreground hover:bg-accent disabled:opacity-50"
+            >
               Cancel
-            </Button>
-            <Button disabled={loading} className="flex-1">
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-foreground text-background rounded-md hover:bg-foreground/90 disabled:opacity-50 font-medium"
+            >
               {loading ? 'Creating...' : 'Create'}
-            </Button>
+            </button>
           </div>
         </form>
       </div>

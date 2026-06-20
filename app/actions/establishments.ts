@@ -20,25 +20,39 @@ export async function createEstablishment(data: {
   slug: string
   description?: string
 }) {
-  const userId = await getUserId()
+  try {
+    const userId = await getUserId()
+    console.log('[v0] User ID:', userId)
 
-  // Generate QR code
-  const qrCodeUrl = `${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/restaurants/${data.slug}`
-  const qrCode = await QRCode.toDataURL(qrCodeUrl)
+    // Generate QR code
+    const qrCodeUrl = `${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/restaurants/${data.slug}`
+    console.log('[v0] Generating QR code for URL:', qrCodeUrl)
+    const qrCode = await QRCode.toDataURL(qrCodeUrl)
 
-  const id = nanoid()
-  
-  await db.insert(establishments).values({
-    id,
-    userId,
-    name: data.name,
-    slug: data.slug,
-    description: data.description,
-    qrCode,
-  })
+    const id = nanoid()
+    console.log('[v0] Generated ID:', id)
+    
+    const now = new Date()
+    console.log('[v0] Inserting establishment:', { id, userId, name: data.name, slug: data.slug })
+    
+    await db.insert(establishments).values({
+      id,
+      userId,
+      name: data.name,
+      slug: data.slug,
+      description: data.description,
+      qrCode,
+      createdAt: now,
+      updatedAt: now,
+    })
 
-  revalidatePath('/dashboard')
-  return { id, qrCode }
+    console.log('[v0] Establishment created successfully')
+    revalidatePath('/dashboard')
+    return { id, qrCode }
+  } catch (error) {
+    console.error('[v0] Error in createEstablishment:', error)
+    throw error
+  }
 }
 
 export async function getEstablishments() {
